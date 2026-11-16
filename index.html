@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prevido</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="bg-white border-b">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="font-bold text-xl text-blue-600">Prevido</div>
+            <a href="/logout" class="text-sm text-gray-500 hover:text-gray-800">Odjava</a>
+        </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto px-4 py-10">
+        <div class="bg-white rounded-xl shadow-sm border p-8">
+            <h1 class="text-2xl font-bold mb-2">Prevedi video</h1>
+            <p class="text-gray-500 mb-6">Uploadaj video i odaberi ciljni jezik. Verzija 1 – zamjena audio trake.</p>
+
+            <form id="uploadForm" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Video datoteka</label>
+                    <input type="file" name="file" accept="video/*" required
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ciljni jezik</label>
+                    <select name="target_lang" required
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        {% for lang in languages %}
+                        <option value="{{ lang.code }}">{{ lang.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium">
+                    Pokreni prijevod
+                </button>
+            </form>
+
+            <div id="status" class="mt-6 hidden"></div>
+        </div>
+
+        <p class="text-center text-sm text-gray-400 mt-8">
+            Prevido v1 – Privatna testna verzija
+        </p>
+    </main>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const statusDiv = document.getElementById('status');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerHTML = '<p class="text-blue-600">Upload i obrada u tijeku...</p>';
+
+            const formData = new FormData(form);
+
+            try {
+                const res = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    statusDiv.innerHTML = `
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p class="text-green-800 font-medium">Uspješno!</p>
+                            <p class="text-sm text-green-700 mt-1">${data.message}</p>
+                            <a href="${data.download_url}" 
+                               class="inline-block mt-3 bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+                                Preuzmi video
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `<p class="text-red-600">${data.detail || 'Greška'}</p>`;
+                }
+            } catch (err) {
+                statusDiv.innerHTML = `<p class="text-red-600">Došlo je do greške. Pokušaj ponovo.</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
